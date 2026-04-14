@@ -1,7 +1,7 @@
 import pytest
 
 from app.switchboard import Switchboard
-from app.switchboard_utils import is_local_user, create_user_based_on_phone_number
+from app.switchboard_utils import is_local_user, create_user_based_on_phone_number, is_phone_valid
 from app.users import ForeignUser, LocalUser
 
 
@@ -88,7 +88,7 @@ def test_register_call_when_input_str_list_contains_empty_or_white_space_values_
 def test_register_call_when_caller_id_and_receiver_id_negatives_then_should_raise_value_error_exception(input) -> None:
     switchboard = Switchboard()
 
-    with pytest.raises(ValueError, match="'caller_id' or 'receiver_id' should represent positive int"):
+    with pytest.raises(ValueError, match="'caller_id' or 'receiver_id' should be parsable to int and positive int"):
         switchboard.register_call(input)
 
 
@@ -99,7 +99,7 @@ def test_register_call_when_caller_id_and_receiver_id_negatives_then_should_rais
 def test_register_call_when_caller_id_and_receiver_id_cannot_be_parsed_to_int_then_should_raise_value_error_exception(input) -> None:
     switchboard = Switchboard()
 
-    with pytest.raises(ValueError, match="'caller_id' or 'receiver_id' should be parsable to int"):
+    with pytest.raises(ValueError, match="'caller_id' or 'receiver_id' should be parsable to int and positive int"):
         switchboard.register_call(input)
 
 
@@ -123,3 +123,14 @@ def test_create_user_based_on_phone_number_when_foreign_phone_then_should_return
     local_user = create_user_based_on_phone_number(1, "name_1", "+12122222222")
     assert isinstance(local_user, ForeignUser)
     assert local_user.user_type() == "foreign"
+
+@pytest.mark.parametrize("input", [
+    "+79122222222",
+    "89990000000",
+    "+79990000000",
+    "+15551234567",
+    "+44 20 7946 0958",
+    "+7 (999) 123-45-67"
+])
+def test_is_phone_valid_when_valid_phone_number_then_should_return_true(input) -> None:
+    assert is_phone_valid(input) == True

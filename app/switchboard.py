@@ -3,11 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.users import User
-from app.switchboard_utils import create_user_based_on_phone_number
-
+from app.switchboard_utils import create_user_based_on_phone_number, is_phone_valid
 
 LOCAL_PHONE_PREFIX = "+7"
 RAW_CALL_SEPARATOR = ","
+
+FIRST_USER_ID_IDX = 0
+FIRST_USER_NAME_IDX = 1
+FIRST_USER_PHONE_IDX = 2
+
+SECOND_USER_ID_IDX = 3
+SECOND_USER_NAME_IDX = 4
+SECOND_USER_PHONE_IDX = 5
 
 
 @dataclass(slots=True)
@@ -36,7 +43,7 @@ class Switchboard:
         if RAW_CALL_SEPARATOR not in raw_call:
             raise ValueError("'raw_call' should have expected separators")
 
-        users_info = raw_call.split(RAW_CALL_SEPARATOR)
+        users_info = [x.strip() for x in raw_call.split(RAW_CALL_SEPARATOR)]
         if len(users_info) != 6:
             raise ValueError("'raw_call' should look like this "
                              "'caller_id,caller_name,caller_phone,receiver_id,receiver_name,receiver_phone'")
@@ -44,14 +51,19 @@ class Switchboard:
         if '' in users_info or ' ' in users_info:
             raise ValueError("'raw_call' values should not be empty or contain white spaces")
 
-        if '-' in users_info[0] or '-' in users_info[3]:
-            raise ValueError("'caller_id' or 'receiver_id' should represent positive int")
+        if users_info[FIRST_USER_ID_IDX].isdigit() is False or users_info[SECOND_USER_ID_IDX].isdigit() is False:
+            raise ValueError("'caller_id' or 'receiver_id' should be parsable to int and positive int")
 
-        if users_info[0].isdigit() is False or users_info[3].isdigit() is False:
-            raise ValueError("'caller_id' or 'receiver_id' should be parsable to int")
+        if is_phone_valid(users_info[FIRST_USER_PHONE_IDX]) is False or is_phone_valid(
+                users_info[SECOND_USER_PHONE_IDX]) is False:
+            raise ValueError("Phone number should be valid")
 
-        caller = create_user_based_on_phone_number(int(users_info[0]), users_info[1], users_info[2])
-        receiver = create_user_based_on_phone_number(int(users_info[3]), users_info[4], users_info[5])
+        caller = create_user_based_on_phone_number(int(users_info[FIRST_USER_ID_IDX]),
+                                                   users_info[FIRST_USER_NAME_IDX],
+                                                   users_info[FIRST_USER_PHONE_IDX])
+        receiver = create_user_based_on_phone_number(int(users_info[SECOND_USER_ID_IDX]),
+                                                     users_info[SECOND_USER_NAME_IDX],
+                                                     users_info[SECOND_USER_PHONE_IDX])
 
         active_call = ActiveCall(caller=caller, receiver=receiver)
         if active_call.is_cross_border:
